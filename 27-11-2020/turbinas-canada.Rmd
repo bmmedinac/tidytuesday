@@ -1,0 +1,88 @@
+---
+title: "Turbinas en Canada"
+output: html_notebook
+---
+
+```{r}
+#setwd("/Volumes/GoogleDrive/Mi unidad/Personal - Academia - Trabajo/Proyectos-R/tidytuesday/27-11-2020")
+library(tidyverse)
+tuesdata <- tidytuesdayR::tt_load('2020-10-27')
+wind_turbine <- tuesdata$`wind-turbine`
+```
+
+```{r}
+str(wind_turbine)
+
+wind_turbine$project_name <- as.factor(wind_turbine$project_name)
+wind_turbine$manufacturer <- as.factor(wind_turbine$manufacturer)
+wind_turbine$model <- as.factor(wind_turbine$model)
+wind_turbine$province_territory <- as.factor(wind_turbine$province_territory)
+wind_turbine$commissioning_date <- as.Date(wind_turbine$commissioning_date, "%Y")
+
+```
+
+A
+¿Qué territorios poseen mayor potencial de almacenamiento de energía eólica ?
+```{r message=FALSE, warning=FALSE}
+wind_turbine %>% 
+  select(province_territory, total_project_capacity_mw, commissioning_date) %>% 
+  group_by(province_territory) %>% 
+  #mutate(kw_provincia = sum(total_project_capacity_mw)) %>% 
+  ggplot(aes(x = commissioning_date,
+             y = total_project_capacity_mw)) +
+  geom_bar() +
+  facet_wrap(~province_territory)
+```
+
+```{r}
+wind_turbine %>% 
+  ggplot(aes(x = total_project_capacity_mw,
+             y = reorder(province_territory, 
+                         total_project_capacity_mw))) +
+  geom_col() +
+  labs(title = "Capacidad de almacenamiento energético eólico en Canadá",
+       subtitle = "Quebec y Ontario concentran la mayoría de las fuentes energéticas eólicas",
+       x = "Capacidad total de los proyectos eólicos (Mw)",
+       y = "Provincia",
+       caption = "Datos: open.canada.ca")
+```
+
+
+## Proporcion altura del hub/diametro del rotor y otras variables
+¿Molinos proporcionalmente más grandes/pequeños se concentran en alguna sona? En el gráfico siguiente, se ve que las provincias de Ontario, Quebec, Nueva Escocia, Columbia Británica, Alberta y las Islas del Príncipe Eduardo han ido instalando progresivamente fuentes eólicas de menor altura pero con un diámetro del rotor mayor ¿Esta es una elección dadas las características del terreno o es una mejora en la tecnología?
+
+```{r}
+wind_turbine %>% 
+  mutate(prop = hub_height_m/rotor_diameter_m) %>% 
+  ggplot(aes(x = commissioning_date,
+             y = prop)) +
+  geom_point(aes(color = turbine_rated_capacity_k_w)) +
+  scale_color_continuous(type = "viridis") +
+  facet_wrap(~province_territory) +
+  labs(title = "Proporción mastil/rotor de turbinas eólicas en Canadá",
+       subtitle = "Las turbinas han aumentado el diámetro del rotor con respecto al mástil (1993-2020)",
+       x = "Puesta en servicio de la turbina",
+       y = "Proporción mástil / rotor (m)",
+       color = "Capacidad (Kw)",
+       caption = "Datos: open.canada.ca")
+```
+
+```{r message=FALSE, warning=FALSE}
+wind_turbine %>% 
+  dplyr::filter(province_territory %in% c("Alberta", "Ontario", "Quebec", "British Columbia")) %>% 
+  mutate(prop = hub_height_m/rotor_diameter_m) %>% 
+  ggplot(aes(x = commissioning_date,
+             y = prop)) +
+  geom_point(aes(color = turbine_rated_capacity_k_w)) +
+  geom_smooth(method = lm) +
+  scale_color_continuous(type = "viridis") +
+  facet_wrap(~province_territory) +
+  labs(title = "Proporción mastil/rotor de turbinas eólicas en Canadá",
+       subtitle = "Las turbinas han aumentado el diámetro del rotor con respecto al mástil (1993-2020)",
+       x = "Puesta en servicio de la turbina",
+       y = "Proporción mástil / rotor (m)",
+       color = "Capacidad (Kw)",
+       caption = "Datos: open.canada.ca")
+```
+
+
